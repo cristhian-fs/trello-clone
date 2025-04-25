@@ -6,6 +6,7 @@ import { QueryProvider } from "@/components/query-provider";
 import { Toaster } from "sonner";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
+import { Modals } from "@/components/modals";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +45,7 @@ export default async function RootLayout({
           <QueryProvider>
             <Toaster />
             {children}
+            <Modals />
           </QueryProvider>
         </body>
       </html>
