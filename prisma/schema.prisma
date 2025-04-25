@@ -5,6 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output   = "generated"
 }
 
 enum UserRole {
@@ -59,6 +60,7 @@ model Organization {
   privateMetadata        Json?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
+  image                  String?
 
   memberships            Membership[]
 
