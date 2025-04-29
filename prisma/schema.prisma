@@ -5,7 +5,6 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output   = "generated"
 }
 
 enum UserRole {
@@ -14,15 +13,15 @@ enum UserRole {
 }
 
 model User {
-  id                    String                 @id @default(cuid())
-  name                  String?
-  email                 String?                @unique
-  emailVerified         DateTime?              @map("email_verified")
-  image                 String?
-  password              String?
-  accounts              Account[]
-  memberships           Membership[]
-  createdOrganizations  Organization[]         @relation("CreatedByUser")
+  id                   String         @id @default(cuid())
+  name                 String?
+  email                String?        @unique
+  emailVerified        DateTime?      @map("email_verified")
+  image                String?
+  password             String?
+  accounts             Account[]
+  memberships          Membership[]
+  createdOrganizations Organization[] @relation("CreatedByUser")
 
   @@map("users")
 }
@@ -48,21 +47,22 @@ model Account {
 }
 
 model Organization {
-  id                     String   @id @default(cuid())
-  name                   String
-  slug                   String   @unique
-  createdBy              String
-  creator                User     @relation("CreatedByUser", fields: [createdBy], references: [id])
-  membersCount           Int      @default(0)
-  maxAllowedMemberships  Int?
-  adminDeleteEnabled     Boolean  @default(false)
-  publicMetadata         Json?
-  privateMetadata        Json?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-  image                  String?
+  id                    String   @id @default(cuid())
+  name                  String
+  slug                  String   @unique
+  createdBy             String
+  creator               User     @relation("CreatedByUser", fields: [createdBy], references: [id])
+  membersCount          Int      @default(0)
+  maxAllowedMemberships Int?
+  adminDeleteEnabled    Boolean  @default(false)
+  publicMetadata        Json?
+  privateMetadata       Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  image                 String?
 
-  memberships            Membership[]
+  memberships Membership[]
+  boards      Board[]
 
   @@map("organizations")
 }
@@ -79,7 +79,26 @@ model Membership {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  organization    Organization @relation(fields: [organizationId], references: [id])
-  
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, userId])
   @@map("memberships")
+}
+
+model Board {
+  id             String @id @default(uuid())
+  organizationId String
+  title          String
+  imageId        String
+  imageThumbUrl  String @db.Text
+  imageFullUrl   String @db.Text
+  imageUserName  String @db.Text
+  imageLinkHTML  String @db.Text
+
+  @@index([organizationId])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("boards")
 }
