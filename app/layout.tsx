@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
 import { Modals } from "@/components/modals";
+import { JotaiProvider } from "@/components/jotai-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,15 +38,17 @@ export default async function RootLayout({
 }>) {
   const session = await auth();
   return (
-    <SessionProvider session={session} refetchOnWindowFocus={false}>
+    <SessionProvider session={session}>
       <html lang="en">
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <QueryProvider>
-            <Toaster />
-            {children}
-            <Modals />
+            <JotaiProvider>
+              <Toaster />
+              {children}
+              <Modals />
+            </JotaiProvider>
           </QueryProvider>
         </body>
       </html>
