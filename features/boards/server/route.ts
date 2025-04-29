@@ -1,0 +1,212 @@
+import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+
+import { db } from "@/lib/db";
+import { currentUser } from "@/lib/auth";
+import { CreateBoardSchema, UpdateBoardSchema } from "../schemas";
+
+const app = new Hono()  
+  .post(
+    '/:organizationId',
+    zValidator("form", CreateBoardSchema),
+    async (c) => {
+      try{
+        const user = await currentUser();
+  
+        // if somehow user is not logged in or don't have an id
+        if(!user || !user.id){
+          throw new Error("Unauthorized");
+        }
+
+        const organizationId = c.req.param("organizationId")
+        const { title, image } = c.req.valid("form");
+
+        const [
+          imageId,
+          imageThumbUrl,
+          imageFullUrl,
+          imageLinkHTML,
+          imageUserName
+        ] = image.split("|");
+
+        if(!imageId || !imageThumbUrl || !imageFullUrl || !imageLinkHTML || !imageUserName){
+          throw new Error("Missing fields. Failed to create board");
+        }
+
+        const board = await db.board.create({
+          data: {
+            title,
+            imageId,
+            imageThumbUrl,
+            imageFullUrl,
+            imageLinkHTML,
+            imageUserName,
+            organizationId,
+          }
+        });
+
+        return c.json({
+          data: board,
+          success: true,
+          error: null
+        }, 200);
+
+      } catch(error){
+        const message = error instanceof Error ? error.message : "Failed to create board.";
+      
+        return c.json({
+          data: null,
+          success: false,
+          error: message
+        }, 500);
+      }
+    }
+  )
+  .get(
+    '/:organizationId',
+    async (c) => {
+      try{
+        const user = await currentUser();
+  
+        // if somehow user is not logged in or don't have an id
+        if(!user || !user.id){
+          throw new Error("Unauthorized");
+        }
+
+        const organizationId = c.req.param("organizationId");
+
+        const boards = await db.board.findMany({
+          where: {
+            organizationId
+          },
+          orderBy: {
+            createdAt: "desc"
+          }
+        });
+
+        return c.json({
+          data: boards,
+          success: true,
+          error: null
+        }, 200);
+
+      } catch(error){
+        const message = error instanceof Error ? error.message : "Failed to get boards.";
+      
+        return c.json({
+          data: null,
+          success: false,
+          error: message
+        }, 500);
+      }
+    }
+  )
+  .patch(
+    '/:organizationId/:boardId',
+    zValidator("form", UpdateBoardSchema),
+    async (c) => {
+      try{
+        const user = await currentUser();
+  
+        // if somehow user is not logged in or don't have an id
+        if(!user || !user.id){
+          throw new Error("Unauthorized");
+        }
+
+        const organizationId = c.req.param("organizationId");
+        const boardId = c.req.param("boardId");
+
+        const organization = await db.organization.findFirst({
+          where: {
+            id: organizationId
+          }
+        });
+
+        if(!organization){
+          throw new Error("Organization not found");
+        }
+
+        const { title } = c.req.valid("form");
+
+        const board = await db.board.findFirst({
+          where: {
+            id: boardId,
+            organizationId: organizationId
+          }
+        });
+        
+        if (!board) {
+          throw new Error("Board not found or does not belong to the organization");
+        }
+        
+        // update:
+        const updatedBoard = await db.board.update({
+          where: { id: boardId },
+          data: { title }
+        });
+
+        return c.json({
+          data: updatedBoard,
+          success: true,
+          error: null
+        }, 200);
+
+
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to update board.";
+      
+        return c.json({
+          data: null,
+          success: false,
+          error: message
+        }, 500);
+      }
+    }
+  )
+  .delete(
+    '/:boardId',
+    async (c) => {
+      try{
+        const user = await currentUser();
+  
+        // if somehow user is not logged in or don't have an id
+        if(!user || !user.id){
+          throw new Error("Unauthorized");
+        }
+
+        const boardId = c.req.param("boardId");
+
+        const board = await db.board.findFirst({
+          where: {
+            id: boardId,
+          }
+        });
+        
+        if (!board) {
+          throw new Error("Board not found");
+        }
+        
+        // delete:
+        const deletedBoard = await db.board.delete({
+          where: { id: boardId }
+        });
+
+        return c.json({
+          data: deletedBoard,
+          success: true,
+          error: null
+        }, 200);
+
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to delete board.";
+      
+        return c.json({
+          data: null,
+          success: false,
+          error: message
+        }, 500);
+      }
+    }
+  )
+
+export default app;
