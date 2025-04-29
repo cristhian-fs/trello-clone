@@ -30,7 +30,7 @@ export const OrganizationSwitcher = () => {
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className="w-full justify-between has-[>svg]:px-2 py-2 h-auto"
+          className="w-full justify-between has-[>svg]:px-2 has-[>svg]:shrink py-2 h-auto"
         >
           <div className="flex items-center justify-start gap-2">
             <Avatar>
@@ -42,7 +42,7 @@ export const OrganizationSwitcher = () => {
           <ChevronsUpDown className="size-4 text-muted-foreground"/>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="max-w-[284px]">
+      <DropdownMenuContent className="max-w-[284px]" align="end">
         {organizations?.map((organization) => (
           <DropdownMenuItem asChild key={organization.id}>
             <OrganizationLinkButton
