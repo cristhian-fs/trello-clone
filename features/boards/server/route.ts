@@ -4,6 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { CreateBoardSchema, UpdateBoardSchema } from "../schemas";
+import { UpdateCardsOrder, UpdateListOrder } from "@/features/lists/schemas";
 
 const app = new Hono()  
   .post(
@@ -163,6 +164,179 @@ const app = new Hono()
       }
     }
   )
+  .patch(
+    '/:organizationId/:boardId/reorder-list',
+    zValidator("json", UpdateListOrder),
+    async (c) => {
+      const organizationId = c.req.param("organizationId");
+      const boardId = c.req.param("boardId");
+      const { items } = c.req.valid("json");
+
+      try{
+        const user = await currentUser();
+  
+        // if somehow user is not logged in or don't have an id
+        if(!user || !user.id){
+          throw new Error("Unauthorized");
+        }
+
+        const organization = await db.organization.findFirst({
+          where: {
+            id: organizationId
+          },
+          include: {
+            memberships: true,
+          }
+        });
+
+        if (!organization) {
+          throw new Error("Organization not found");
+        }
+        
+        const userIsMember = organization.memberships.some(
+          (membership) => membership.userId === user.id
+        );
+        
+        if (!userIsMember) {
+          throw new Error("You are not a member of this organization");
+        }
+
+        const board = await db.board.findFirst({
+          where: {
+            id: boardId,
+            organizationId
+          }
+        });
+        
+        if (!board) {
+          throw new Error("Board not found or does not belong to the organization");
+        }
+
+        const transaction = items.map((list) => 
+          db.list.update({
+            where: {
+              id: list.id,
+              board: {
+                organizationId
+              }
+            },
+            data: {
+              order: list.order
+            }
+          })
+        );
+
+        const lists = await db.$transaction(transaction);
+
+        if (!lists) {
+          throw new Error("Failed to reorder lists");
+        }
+
+        return c.json({
+          data: lists,
+          success: true,
+          error: null
+        }, 200)
+        
+      } catch(error){
+        const message = error instanceof Error ? error.message : "Failed to reorder lists.";
+      
+        return c.json({
+          data: null,
+          success: false,
+          error: message
+        }, 500);
+      }
+    } 
+  )
+  .patch(
+    '/:organizationId/:boardId/reorder-card',
+    zValidator("json", UpdateCardsOrder),
+    async (c) => {
+      const organizationId = c.req.param("organizationId");
+      const boardId = c.req.param("boardId");
+      const { items } = c.req.valid("json");
+
+      try{
+        const user = await currentUser();
+  
+        // if somehow user is not logged in or don't have an id
+        if(!user || !user.id){
+          throw new Error("Unauthorized");
+        }
+
+        const organization = await db.organization.findFirst({
+          where: {
+            id: organizationId
+          },
+          include: {
+            memberships: true,
+          }
+        });
+
+        if (!organization) {
+          throw new Error("Organization not found");
+        }
+        
+        const userIsMember = organization.memberships.some(
+          (membership) => membership.userId === user.id
+        );
+        
+        if (!userIsMember) {
+          throw new Error("You are not a member of this organization");
+        }
+
+        const board = await db.board.findFirst({
+          where: {
+            id: boardId,
+            organizationId
+          }
+        });
+        
+        if (!board) {
+          throw new Error("Board not found or does not belong to the organization");
+        }
+
+        const transaction = items.map((card) => 
+          db.card.update({
+            where: {
+              id: card.id,
+              list: {
+                board: {
+                  organizationId
+                }
+              }
+            },
+            data: {
+              order: card.order,
+              listId: card.listId
+            }
+          })
+        );
+
+        const cards = await db.$transaction(transaction);
+
+        if (!cards) {
+          throw new Error("Failed to reorder card");
+        }
+
+        return c.json({
+          data: cards,
+          success: true,
+          error: null
+        }, 200)
+        
+      } catch(error){
+        const message = error instanceof Error ? error.message : "Failed to reorder card.";
+      
+        return c.json({
+          data: null,
+          success: false,
+          error: message
+        }, 500);
+      }
+    } 
+  )
   .delete(
     '/:boardId',
     async (c) => {
@@ -207,6 +381,6 @@ const app = new Hono()
         }, 500);
       }
     }
-  )
+  );
 
 export default app;
