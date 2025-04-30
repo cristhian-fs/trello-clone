@@ -27,12 +27,12 @@ export const Info = () => {
   return (
     <div className="flex items-center gap-x-4">
       <Avatar className="size-[60px]">
-        <AvatarImage src={organization.image || ""} />
-        <AvatarFallback>{organization.name.charAt(0).toUpperCase()}</AvatarFallback>
+        <AvatarImage src={organization.data.image || ""} />
+        <AvatarFallback>{organization.data.name.charAt(0).toUpperCase()}</AvatarFallback>
       </Avatar>
       <div className="space-y-1">
         <p className="font-semibold text-xl">
-          {organization.name}
+          {organization.data.name}
         </p>
         <div className="flex items-center text-xs text-muted-foreground">
           <CreditCard className="size-3 mr-1"/>

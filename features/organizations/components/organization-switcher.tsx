@@ -34,10 +34,10 @@ export const OrganizationSwitcher = () => {
         >
           <div className="flex items-center justify-start gap-2">
             <Avatar>
-              <AvatarImage src={currentOrganization.image || ""} />
-              <AvatarFallback>{currentOrganization.name.charAt(0).toUpperCase()}</AvatarFallback>
+              <AvatarImage src={currentOrganization.data.image || ""} />
+              <AvatarFallback>{currentOrganization.data.name.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
-            <p className="text-sm text-foreground">{currentOrganization.name}</p>
+            <p className="text-sm text-foreground">{currentOrganization.data.name}</p>
           </div>
           <ChevronsUpDown className="size-4 text-muted-foreground"/>
         </Button>

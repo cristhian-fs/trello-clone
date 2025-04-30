@@ -30,35 +30,51 @@ const app = new Hono()
   .get(
     '/:organizationId',
     async (c) => {
-    const organizationId = c.req.param("organizationId")
+    const organizationId = c.req.param("organizationId");
 
-    const user = await currentUser();
+    try{
 
-    // if somehow user is not logged in
-    if(!user){
-      return c.json({ error: "Unauthorized" }, 401);
+      const user = await currentUser();
+
+      // if somehow user is not logged in
+      if(!user){
+        throw new Error("Unauthorized");
+      }
+  
+      // Get organizations directly with a single query using include
+      const organization = await db.organization.findUnique({
+        where: {
+          id: organizationId
+        }
+      });
+  
+      // verify if the user is a member of the organization
+      const membership = await db.membership.findFirst({
+        where: {
+          userId: user.id,
+          organizationId: organizationId
+        }
+      });
+  
+      if(!organization || !membership){
+        throw new Error("Unauthorized");
+      }
+  
+      return c.json({
+        data: organization,
+        success: true,
+        error: null
+      });
+    } catch(error){
+      const message = error instanceof Error ? error.message : "Failed to get organization.";
+      
+      return c.json({
+        data: null,
+        success: false,
+        error: message
+      }, 500);
     }
 
-    // Get organizations directly with a single query using include
-    const organization = await db.organization.findUnique({
-      where: {
-        id: organizationId
-      }
-    });
-
-    // verify if the user is a member of the organization
-    const membership = await db.membership.findFirst({
-      where: {
-        userId: user.id,
-        organizationId: organizationId
-      }
-    });
-
-    if(!organization || !membership){
-      return c.json({ error: "Unauthorized" }, 401);
-    }
-
-    return c.json(organization);
   })
   .post(
     '/', 
