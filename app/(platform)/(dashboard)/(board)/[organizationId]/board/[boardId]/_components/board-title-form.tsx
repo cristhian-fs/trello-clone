@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { ComponentRef, RefObject, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { useUpdateBoard } from "@/features/boards/api/use-update-board";
 import { toast } from "sonner";
+import { useEventListener, useOnClickOutside } from "usehooks-ts";
 
 interface BoardTitleFormProps {
   data: Board;
@@ -20,6 +21,8 @@ interface BoardTitleFormProps {
 export const BoardTitleForm = ({
   data
 }: BoardTitleFormProps) => {
+
+  const formRef = useRef<ComponentRef<"form">>(null) as RefObject<HTMLFormElement>;
 
   const [isEditing, setIsEditing] = useState(false);
   const { mutate: updateBoard, isPending: isUpdatingBoard } = useUpdateBoard({ boardId: data.id, organizationId: data.organizationId });
@@ -52,10 +55,22 @@ export const BoardTitleForm = ({
     setIsEditing(false);
   }
 
+  const disabledEditing = () => {
+    setIsEditing(false);
+  }
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    if(e.key === "Escape") disabledEditing();
+  }
+
+  useEventListener("keydown", onKeyDown);
+  useOnClickOutside(formRef, disabledEditing)
+
   if(isEditing){
     return (
       <Form {...form}>
         <form
+          ref={formRef}
           onSubmit={form.handleSubmit(handleSubmit)}
         >
           <FormField 
