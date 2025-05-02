@@ -4,8 +4,8 @@ import { client } from "@/lib/rpc";
 
 import { InferRequestType, InferResponseType } from "hono";
 
-type ResponseType = InferResponseType<typeof client.api.boards[":boardId"]["$delete"]>
-type RequestType = InferRequestType<typeof client.api.boards[":boardId"]["$delete"]>
+type ResponseType = InferResponseType<typeof client.api.boards[":organizationId"][":boardId"]["$delete"]>
+type RequestType = InferRequestType<typeof client.api.boards[":organizationId"][":boardId"]["$delete"]>
 
 interface useDeleteBoardProps {
   organizationId: string
@@ -22,7 +22,7 @@ export const useDeleteBoard = ({ organizationId} : useDeleteBoardProps) => {
   >({
     mutationKey: ["organizations", organizationId, "boards"],
     mutationFn: async ({ param }) => {
-      const response = await client.api.boards[":boardId"]["$delete"]({ 
+      const response = await client.api.boards[":organizationId"][":boardId"]["$delete"]({ 
         param
       });
 
