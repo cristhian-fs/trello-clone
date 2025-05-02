@@ -21,7 +21,9 @@ export const BoardOptions = ({ data }: BoardOptionsProps) => {
   const { mutate, isPending } = useDeleteBoard({ organizationId: data.organizationId });
   const router = useRouter();
 
-  const handleDelete = () => mutate({ param: { boardId: data.id }}, {
+  const handleDelete = () => mutate({ 
+    param: { boardId: data.id, organizationId: data.organizationId },
+  }, {
     onSuccess() {
       toast.success("Board deleted successfully");
       router.replace(`/organization/${data.organizationId}`);
