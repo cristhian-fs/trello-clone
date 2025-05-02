@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
+import { ACTION, ENTITY_TYPE } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { createAuditLog } from "@/lib/create-audit-log";
 import { CreateListSchema, UpdateListSchema } from "../schemas";
 
 
@@ -60,6 +62,17 @@ const app = new Hono()
             order: newOrder
           }
         });
+
+        await createAuditLog({
+          action: ACTION.CREATE,
+          entityId: list.id,
+          entityTitle: list.title,
+          entityType: ENTITY_TYPE.LIST,
+          organizationId,
+          userId: user.id,
+          userName: user.name!,
+          userImage: user.image || ""
+        })
 
         return c.json({
           data: list,
@@ -162,6 +175,17 @@ const app = new Hono()
           include: {
             cards: true
           }
+        });
+
+        await createAuditLog({
+          action: ACTION.CREATE,
+          entityId: list.id,
+          entityTitle: list.title,
+          entityType: ENTITY_TYPE.LIST,
+          organizationId,
+          userId: user.id,
+          userName: user.name!,
+          userImage: user.image || ""
         })
 
         return c.json({
@@ -272,6 +296,17 @@ const app = new Hono()
           }
         });
 
+        await createAuditLog({
+          action: ACTION.UPDATE,
+          entityId: list.id,
+          entityTitle: list.title,
+          entityType: ENTITY_TYPE.LIST,
+          organizationId,
+          userId: user.id,
+          userName: user.name!,
+          userImage: user.image || ""
+        })
+
         return c.json({
           data: list,
           success: true,
@@ -351,6 +386,17 @@ const app = new Hono()
         const deletedList = await db.list.delete({
           where: { id: listId }
         });
+
+        await createAuditLog({
+          action: ACTION.DELETE,
+          entityId: deletedList.id,
+          entityTitle: deletedList.title,
+          entityType: ENTITY_TYPE.LIST,
+          organizationId,
+          userId: user.id,
+          userName: user.name!,
+          userImage: user.image || ""
+        })
 
         return c.json({
           data: deletedList,

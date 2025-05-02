@@ -76,6 +76,57 @@ const app = new Hono()
     }
 
   })
+  .get(
+    '/:organizationId/logs',
+    async (c) => {
+      const organizationId = c.req.param("organizationId");
+      try{
+        const user = await currentUser();
+
+        // if somehow user is not logged in
+        if(!user){
+          throw new Error("Unauthorized");
+        }
+
+        // membership verification
+        const organization = await db.organization.findFirst({
+          where: { id: organizationId },
+          include: { memberships: true, }
+        });
+
+        if (!organization) {
+          throw new Error("Organization not found");
+        }
+        
+        const userIsMember = organization.memberships.some(
+          (membership) => membership.userId === user.id
+        );
+        
+        if (!userIsMember) {
+          throw new Error("You are not a member of this organization");
+        }
+
+        const organizationAudits = await db.auditLog.findMany({
+          where: { organizationId, },
+          orderBy: { createdAt: "desc" }
+        });
+
+        return c.json({
+          data: organizationAudits,
+          success: true,
+          error: null
+        });
+      } catch(error){
+        const message = error instanceof Error ? error.message : "Failed to get organization logs.";
+      
+        return c.json({
+          data: null,
+          success: false,
+          error: message
+        }, 500);
+      }
+    }
+  )
   .post(
     '/', 
     zValidator("form", CreateOrganizationSchema),

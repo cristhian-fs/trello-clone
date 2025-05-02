@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { CreateBoardSchema, UpdateBoardSchema } from "../schemas";
 import { UpdateCardsOrder, UpdateListOrder } from "@/features/lists/schemas";
+import { createAuditLog } from "@/lib/create-audit-log";
+import { ACTION, ENTITY_TYPE } from "@prisma/client";
 
 const app = new Hono()  
   .post(
@@ -45,6 +47,17 @@ const app = new Hono()
             organizationId,
           }
         });
+
+        await createAuditLog({
+          action: ACTION.CREATE,
+          entityId: board.id,
+          entityTitle: board.title,
+          entityType: ENTITY_TYPE.BOARD,
+          organizationId,
+          userId: user.id,
+          userName: user.name!,
+          userImage: user.image || ""
+        })
 
         return c.json({
           data: board,
@@ -102,6 +115,48 @@ const app = new Hono()
       }
     }
   )
+  .get(
+    '/:organizationId/:boardId',
+    async (c) => {
+      try{
+        const user = await currentUser();
+  
+        // if somehow user is not logged in or don't have an id
+        if(!user || !user.id){
+          throw new Error("Unauthorized");
+        }
+
+        const organizationId = c.req.param("organizationId");
+        const boardId = c.req.param("boardId");
+
+        const board = await db.board.findFirst({
+          where: {
+            id: boardId,
+            organizationId: organizationId
+          }
+        });
+        
+        if (!board) {
+          throw new Error("Board not found or does not belong to the organization");
+        }
+
+        return c.json({
+          data: board,
+          success: true,
+          error: null
+        }, 200);
+
+      } catch(error){
+        const message = error instanceof Error ? error.message : "Failed to get board.";
+      
+        return c.json({
+          data: null,
+          success: false,
+          error: message
+        }, 500);
+      }
+    }
+  )
   .patch(
     '/:organizationId/:boardId',
     zValidator("form", UpdateBoardSchema),
@@ -145,6 +200,17 @@ const app = new Hono()
           where: { id: boardId },
           data: { title }
         });
+
+        await createAuditLog({
+          action: ACTION.UPDATE,
+          entityId: updatedBoard.id,
+          entityTitle: updatedBoard.title,
+          entityType: ENTITY_TYPE.BOARD,
+          organizationId,
+          userId: user.id,
+          userName: user.name!,
+          userImage: user.image || ""
+        })
 
         return c.json({
           data: updatedBoard,
@@ -338,7 +404,7 @@ const app = new Hono()
     } 
   )
   .delete(
-    '/:boardId',
+    '/:organizationId/:boardId',
     async (c) => {
       try{
         const user = await currentUser();
@@ -349,6 +415,7 @@ const app = new Hono()
         }
 
         const boardId = c.req.param("boardId");
+        const organizationId = c.req.param("organizationId");
 
         const board = await db.board.findFirst({
           where: {
@@ -364,6 +431,17 @@ const app = new Hono()
         const deletedBoard = await db.board.delete({
           where: { id: boardId }
         });
+
+        await createAuditLog({
+          action: ACTION.DELETE,
+          entityId: deletedBoard.id,
+          entityTitle: deletedBoard.title,
+          entityType: ENTITY_TYPE.BOARD,
+          organizationId,
+          userId: user.id,
+          userName: user.name!,
+          userImage: user.image || ""
+        })
 
         return c.json({
           data: deletedBoard,
