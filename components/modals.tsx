@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { CreateOrganizationModal } from "@/features/organizations/components/create-organization-modal";
+import { CardModal } from "./card-modal/index";
 
 export const Modals = () => {
 
@@ -18,6 +19,7 @@ export const Modals = () => {
   return (
     <>
       <CreateOrganizationModal />
+      <CardModal />
     </>
   )
 }
