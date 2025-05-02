@@ -7,6 +7,11 @@ import { CreateBoardSchema, UpdateBoardSchema } from "../schemas";
 import { UpdateCardsOrder, UpdateListOrder } from "@/features/lists/schemas";
 import { createAuditLog } from "@/lib/create-audit-log";
 import { ACTION, ENTITY_TYPE } from "@prisma/client";
+import { 
+  incrementAvailableCount, 
+  hasAvailableCount, 
+  decreaseAvailableCount
+} from "@/lib/org-limit";
 
 const app = new Hono()  
   .post(
@@ -23,6 +28,14 @@ const app = new Hono()
 
         const organizationId = c.req.param("organizationId")
         const { title, image } = c.req.valid("form");
+
+        const canCreate = await hasAvailableCount({
+          organizationId
+        });
+
+        if(!canCreate){
+          throw new Error("You have reached your board limit. Please upgrade to create more.");
+        }
 
         const [
           imageId,
@@ -47,6 +60,10 @@ const app = new Hono()
             organizationId,
           }
         });
+        
+        await incrementAvailableCount({
+          organizationId
+        })
 
         await createAuditLog({
           action: ACTION.CREATE,
@@ -57,7 +74,7 @@ const app = new Hono()
           userId: user.id,
           userName: user.name!,
           userImage: user.image || ""
-        })
+        });
 
         return c.json({
           data: board,
@@ -431,6 +448,10 @@ const app = new Hono()
         const deletedBoard = await db.board.delete({
           where: { id: boardId }
         });
+
+        await decreaseAvailableCount({
+          organizationId
+        })
 
         await createAuditLog({
           action: ACTION.DELETE,

@@ -1,20 +1,24 @@
 "use client"
 
+import Link from "next/link";
+import { HelpCircle, User2 } from "lucide-react"
+
 import { FormPopover } from "@/components/form-popover"
 import { Hint } from "@/components/hint"
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetBoards } from "@/features/boards/api/use-get-boards";
+import { MAX_FREE_BOARDS } from "@/constants/boards";
 import { useOrganizationId } from "@/features/organizations/hooks/use-organization-id";
-import { HelpCircle, User2 } from "lucide-react"
-import Link from "next/link";
+import { useGetAvailableBoardsLimit } from "@/features/organizations/api/use-get-available-boards-limit";
 
 export const BoardList = () => {
 
   const organizationId = useOrganizationId();
 
   const { data: boards, isLoading } = useGetBoards({ organizationId });
+  const { data: availableBoardsLimit } = useGetAvailableBoardsLimit({ organizationId });
 
-  if(isLoading){
+  if(isLoading) {
     return <BoardList.Skeleton />
   }
 
@@ -44,7 +48,7 @@ export const BoardList = () => {
           >
             <p className="text-sm">Create new board</p>
             <span className="text-xs">
-              5 remaining
+              {`${MAX_FREE_BOARDS - (availableBoardsLimit || 0)} remaining`}
             </span>
             <Hint 
               sideOffset={40}

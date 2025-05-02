@@ -127,6 +127,65 @@ const app = new Hono()
       }
     }
   )
+  .get(
+    '/:organizationId/boards-remaining',
+    async (c) => {
+      const organizationId = c.req.param("organizationId");
+      try{
+        const user = await currentUser();
+
+        // if somehow user is not logged in
+        if(!user){
+          throw new Error("Unauthorized");
+        }
+
+        // membership verification
+        const organization = await db.organization.findFirst({
+          where: { id: organizationId },
+          include: { memberships: true, }
+        });
+
+        if (!organization) {
+          throw new Error("Organization not found");
+        }
+        
+        const userIsMember = organization.memberships.some(
+          (membership) => membership.userId === user.id
+        );
+        
+        if (!userIsMember) {
+          throw new Error("You are not a member of this organization");
+        }
+
+        const orgLimit = await db.organizationLimit.findUnique({
+          where: { organizationId }
+        });
+      
+        if(!orgLimit){
+          return c.json({
+            data: 0,
+            success: true,
+            error: null
+          });
+        }
+      
+        return c.json({
+          data: orgLimit.count,
+          success: true,
+          error: null
+        });
+
+    } catch(error){
+        const message = error instanceof Error ? error.message : "Failed to get organization boards remaining.";
+        
+        return c.json({
+          data: null,
+          success: false,
+          error: message
+        }, 500);
+      }
+    }
+  )
   .post(
     '/', 
     zValidator("form", CreateOrganizationSchema),

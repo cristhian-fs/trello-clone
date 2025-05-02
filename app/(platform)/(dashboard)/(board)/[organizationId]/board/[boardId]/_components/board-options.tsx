@@ -18,7 +18,7 @@ interface BoardOptionsProps{
 
 export const BoardOptions = ({ data }: BoardOptionsProps) => {
 
-  const { mutate, isPending } = useDeleteBoard({ organizationId: data.organizationId });
+  const { mutate, isPending } = useDeleteBoard({ organizationId: data.organizationId, boardId: data.id });
   const router = useRouter();
 
   const handleDelete = () => mutate({ 

@@ -8,10 +8,11 @@ type ResponseType = InferResponseType<typeof client.api.boards[":organizationId"
 type RequestType = InferRequestType<typeof client.api.boards[":organizationId"][":boardId"]["$delete"]>
 
 interface useDeleteBoardProps {
-  organizationId: string
+  organizationId: string,
+  boardId: string
 }
 
-export const useDeleteBoard = ({ organizationId} : useDeleteBoardProps) => {
+export const useDeleteBoard = ({ organizationId, boardId } : useDeleteBoardProps) => {
 
   const queryClient = useQueryClient();
 
@@ -21,9 +22,9 @@ export const useDeleteBoard = ({ organizationId} : useDeleteBoardProps) => {
     RequestType
   >({
     mutationKey: ["organizations", organizationId, "boards"],
-    mutationFn: async ({ param }) => {
+    mutationFn: async () => {
       const response = await client.api.boards[":organizationId"][":boardId"]["$delete"]({ 
-        param
+        param: { boardId, organizationId }
       });
 
       if(!response.ok){
@@ -33,7 +34,8 @@ export const useDeleteBoard = ({ organizationId} : useDeleteBoardProps) => {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: ["organizations", organizationId, "boards"]})
+      queryClient.invalidateQueries({queryKey: ["organizations", organizationId, "boards"]});
+      queryClient.invalidateQueries({queryKey: [boardId, "boardCount"]});
     }
   });
 

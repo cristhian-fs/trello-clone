@@ -29,6 +29,7 @@ export const useCreateBoard = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ["organizations", "boards"]});
+      queryClient.invalidateQueries({queryKey: ["boardCount"]});
     },
   })
 
